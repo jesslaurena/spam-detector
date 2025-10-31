@@ -1,0 +1,5 @@
+alpha: 1.0
+min_freq: 2
+ngram_range: [1, 1]
+test_size: 0.2
+random_seed: 42
