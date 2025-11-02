@@ -18,6 +18,13 @@ from typing import List, Dict, Any, Tuple, Iterable, Optional
 import pandas as pd
 from sklearn import metrics
 
+# Add parent directory to path so we can import src modules
+import sys
+from pathlib import Path
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
 from src.model import MultinomialNB
 from src.vectorize import vectorize, load_vocab
 

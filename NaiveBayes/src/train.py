@@ -24,6 +24,13 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
 # project modules
+# Add parent directory to path so we can import src modules
+import sys
+from pathlib import Path
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
 from src.vectorize import build_vocab, docs_to_matrix, save_vocab
 from src.model import MultinomialNB
 
@@ -78,7 +85,7 @@ def load_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
     # allow alternate column names by common heuristics
     if 'text' not in df.columns:
-        for cand in ['message', 'body', 'Text', 'content']:
+        for cand in ['message', 'body', 'Text', 'content', 'email_content', 'emailContent']:
             if cand in df.columns:
                 df = df.rename(columns={cand: 'text'})
                 break
@@ -203,6 +210,10 @@ def main():
 
     # Try to import project preprocess; if missing use fallback
     try:
+        # Ensure parent is in path (already done above, but ensure here too)
+        parent_dir = Path(__file__).parent.parent
+        if str(parent_dir) not in sys.path:
+            sys.path.insert(0, str(parent_dir))
         from src.preprocess import preprocess  # type: ignore
         preprocess_fn = preprocess
     except Exception:

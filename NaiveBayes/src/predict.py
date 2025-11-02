@@ -25,6 +25,13 @@ import os
 from typing import Dict, Any, Iterable, List, Tuple
 
 # Project imports
+# Add parent directory to path so we can import src modules
+import sys
+from pathlib import Path
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
 from src.vectorize import load_vocab, vectorize
 from src.model import MultinomialNB
 
@@ -95,6 +102,10 @@ def main():
 
     # Try to import team preprocess if available
     try:
+        # Ensure parent is in path
+        parent_dir = Path(__file__).parent.parent
+        if str(parent_dir) not in sys.path:
+            sys.path.insert(0, str(parent_dir))
         from src.preprocess import preprocess  # type: ignore
         preprocess_fn = preprocess
     except Exception:
