@@ -71,7 +71,7 @@ st.markdown("""
 st.markdown('<h1 class="main-header">🛡️ Spam Detector</h1>', unsafe_allow_html=True)
 st.markdown(
     "<p style='text-align: center; font-size: 1.2rem; color: #6b7280;'>"
-    "AI-powered email spam detection using Naive Bayes and KNN algorithms</p>",
+    "Email spam detection using Naive Bayes and KNN algorithms</p>",
     unsafe_allow_html=True
 )
 
