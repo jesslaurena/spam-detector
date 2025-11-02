@@ -3,6 +3,42 @@
 ## 📋 Project Overview
 This project implements and compares **K-Nearest Neighbors (KNN)** and **Naive Bayes** algorithms for email spam detection. The goal is to classify emails as spam (1) or ham (0) and compare the performance of both algorithms.
 
+## How to Run
+
+### 1. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Download Dataset
+
+```bash
+python scripts/download_data.py
+```
+
+### 3. Train Your Models
+
+Make sure your models are trained first:
+
+```bash
+# Train Naive Bayes
+cd NaiveBayes
+python src/train.py --data ../data/spam_assassin_preprocessed.csv --config config.yaml --save_dir models
+cd ..
+```
+
+TODO: Add KNN
+
+### 4. Run the App
+
+```bash
+streamlit run app.py
+```
+
+The app will open automatically in your browser at `http://localhost:8501`
+
+
 ## 📊 Dataset Information
 
 ### **Main Dataset**
