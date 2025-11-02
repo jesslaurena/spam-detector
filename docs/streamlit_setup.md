@@ -1,6 +1,6 @@
 # Streamlit Quick Start
 
-## 📦 Installation
+## Installation
 
 ### 1. Install Dependencies
 
@@ -34,7 +34,7 @@ streamlit run app.py
 
 The app will open automatically in your browser at `http://localhost:8501`
 
-## 🚢 Deployment to Streamlit Cloud
+## Deployment to Streamlit Cloud
 
 ### Option 1: Streamlit Cloud (Easiest)
 
@@ -55,26 +55,7 @@ The app will open automatically in your browser at `http://localhost:8501`
 
 3. **Done!** Your app is live and updates automatically on every push.
 
-## 🔧 Customization
-
-### Change Theme
-
-Edit `.streamlit/config.toml`:
-```toml
-[theme]
-primaryColor = "#your-color"
-```
-
-### Add More Features
-
-The app is fully customizable in Python. You can:
-- Add more metrics
-- Create visualizations
-- Add file upload
-- Add batch processing
-- Export results
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### "Model file not found"
 - Make sure you've trained the Naive Bayes model
@@ -84,25 +65,15 @@ The app is fully customizable in Python. You can:
 - Install all dependencies: `pip install -r requirements.txt`
 - Make sure Python path includes NaiveBayes/src
 
-### "KNN not working"
-- This is expected until KNN is implemented
-- The app will work fine with just Naive Bayes
-
-## 📝 Adding KNN Support
+## Adding KNN Support
 
 When KNN is ready:
 
 1. Update `load_knn_model()` in `app.py`
 2. Update `predict_knn()` function
-3. The UI will automatically show KNN results!
+3. The UI will automatically show KNN results
 
-## 🎨 Tips
-
-- Use `st.cache` for loading models (already done)
-- Add `st.spinner()` for long operations (already done)
-- Use columns for side-by-side layouts (already done)
-
-## 📚 Resources
+## Resources
 
 - [Streamlit Docs](https://docs.streamlit.io)
 - [Streamlit Gallery](https://streamlit.io/gallery)
