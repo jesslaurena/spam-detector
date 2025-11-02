@@ -200,7 +200,7 @@ def predict_knn(text: str, knn_model):
     """Predict using KNN - to be implemented"""
 
     # TODO: Implement KNN prediction when ready
-    
+
     return None
 
 
@@ -395,15 +395,12 @@ if analyze_button and email_text.strip():
 # Footer
 st.markdown("---")
 
-# Team members with LinkedIn links
-# Update these URLs with your actual LinkedIn profile URLs
 team_members = [
     {"name": "Jess Anderson", "linkedin": "https://www.linkedin.com/in/jessanderson1145/"},
     {"name": "Suchir Kolli", "linkedin": "https://www.linkedin.com/in/suchir-kolli-9a5288293/"},
     {"name": "Isabella Pareja", "linkedin": "https://www.linkedin.com/in/isabella-pareja-407484380/"},
 ]
 
-# Create clickable links
 links_html = " • ".join([
     f'<a href="{member["linkedin"]}" target="_blank" style="color: #1f77b4; text-decoration: none; font-weight: 500;">{member["name"]}</a>'
     for member in team_members
