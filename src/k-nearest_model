@@ -22,16 +22,14 @@ def load_features(filename):
         reader = csv.reader(file)
         header = next(reader)   #skips the first row since its just the column names
         
-        cnt = 0
         for row in reader:
             cnt += 1    #using this to cap the data so my computer doesnt crash..
             labels.append(int(row[0]))  #first column in row = label
             row_features = [float(x) for x in row[1:]]
             features.append(row_features)   #the rest of the columns = features
-            if cnt == 500:  #DELETE THIS BEFORE PUSHING
-                break
     
     return features, labels
+
 
 #2. Computing the "distance" between two emails (distance = 0 -> similar, distance = 1 -> diff)
 def cosine_distance(email1, email2):
@@ -108,7 +106,7 @@ if __name__ == "__main__":
     print("Testing emails:", len(test_features))
     print("Features per email:", len(train_features[0]))
 
-    k = 17
+    k = 9
 
     start = time.time()
     predicted_labels = predict_all(train_features, train_labels, test_features, k)
