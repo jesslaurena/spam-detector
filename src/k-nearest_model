@@ -23,7 +23,6 @@ def load_features(filename):
         header = next(reader)   #skips the first row since its just the column names
         
         for row in reader:
-            cnt += 1    #using this to cap the data so my computer doesnt crash..
             labels.append(int(row[0]))  #first column in row = label
             row_features = [float(x) for x in row[1:]]
             features.append(row_features)   #the rest of the columns = features
