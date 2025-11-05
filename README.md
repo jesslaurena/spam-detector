@@ -162,11 +162,3 @@ Open the app, paste one of these example messages and click Analyze:
 - Ham: `Go until jurong point, crazy.. Available only in bugis n great world la e buffet...`
 - Spam: `Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005. Text FA to 87121 to receive entry`
 
----
-
-## Team
-- Jess Anderson — data cleaning & frontend  
-- Suchir Kolli — Naive Bayes, integration (you)  
-- Isabella Pareja — KNN implementation
-
-
