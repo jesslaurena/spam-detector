@@ -1,7 +1,7 @@
 # Spam Detection Project
 
 ## 📋 Project Overview
-This project implements and compares K-Nearest Neighbors (KNN) and Naive Bayes algorithms for email spam detection. The primary, high‑accuracy pipeline uses TF‑IDF + classifier (saved artifacts included). The app prefers TF‑IDF artifacts and falls back to the from‑scratch Multinomial Naive Bayes implementation. KNN is included as a from‑scratch NumPy baseline.
+This project implements and compares K-Nearest Neighbors (KNN) and Naive Bayes algorithms for email spam detection. The primary, high‑accuracy pipeline uses TF‑IDF + classifier (saved artifacts included). The app prefers TF‑IDF artifacts and falls back to the from‑scratch Multinomial Naive Bayes implementation. KNN is included as a from‑scratch NumPy baseline. Both Multinomial Naive Bayes (src/model.py) and a NumPy K-Nearest Neighbors implementation (KNN/src/knn_model.py) are implemented from scratch to satisfy the project requirement of two comparable algorithms.
 
 Labels:  
 - 0 = ham (legitimate)  
@@ -108,6 +108,14 @@ python NaiveBayes/scripts/train_tfidf_logreg.py
 python NaiveBayes/src/train.py --data data/spam_assassin_preprocessed.csv --config NaiveBayes/config.yaml --save_dir NaiveBayes/models
 ```
 
+- Recommended: train the TF‑IDF + classifier (used by the app as the primary model)
+```bash
+python NaiveBayes/scripts/train_tfidf_logreg.py
+# This produces:
+# - NaiveBayes/models/tfidf_vectorizer.pkl
+# - NaiveBayes/models/logreg_tfidf.pkl
+```
+
 - Train Naive Bayes from precomputed Bag‑of‑Words:
 ```bash
 python NaiveBayes/scripts/train_from_bow.py
@@ -150,7 +158,13 @@ Dataset stats (for reference)
   - Ensure the TF‑IDF vectorizer used to transform inputs matches the vectorizer used when training the TF‑IDF classifier.
   - If using NB, ensure `vocab.json` corresponds to the NB model (index mapping must match).
 - If KNN is slow: KNN is heavier (nearest-neighbor search across many dense vectors). The app preloads the index and uses a vectorized implementation; reducing TF‑IDF `max_features` will reduce memory/time.
-
+- If `streamlit` is not available, run:
+  pip install streamlit
+  or use the module form: python -m streamlit run app.py
+- If the app reports missing artifacts, confirm:
+  NaiveBayes/models/tfidf_vectorizer.pkl and NaiveBayes/models/logreg_tfidf.pkl exist.
+  If not, run the TF‑IDF training script above or use the NB fallback artifacts.
+- If KNN is slow: this is expected for large training sets. The app preloads an optimized NumPy KNN index, but KNN still needs more CPU/memory than NB or the TF‑IDF classifier.
 ---
 
 ## ✅ Quick verification (one command)
