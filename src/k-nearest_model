@@ -1,0 +1,116 @@
+import csv      #to read train/test data
+import time     #used to measure time algorithm takes
+import numpy as np
+
+#i need:
+#   1. function to load data 
+#   2. function to compute distance
+#   3. function to get K nearest neighbors
+#   4. function to predict label for test email
+#   5. function to predict labels for all test emails
+#   6. function to evaluate accuracy/precision?
+#   7. main() to call all functions
+
+
+#1. This function will load the features of the emails from the CSV file 
+#(separating the features from the label of spam or ham and putting them in separate vectors)
+def load_features(filename):
+    features = []
+    labels = []
+
+    with open(filename, 'r') as file:
+        reader = csv.reader(file)
+        header = next(reader)   #skips the first row since its just the column names
+        
+        for row in reader:
+            labels.append(int(row[0]))  #first column in row = label
+            row_features = [float(x) for x in row[1:]]
+            features.append(row_features)   #the rest of the columns = features
+    
+    return features, labels
+
+
+#2. Computing the "distance" between two emails (distance = 0 -> similar, distance = 1 -> diff)
+def cosine_distance(email1, email2):
+    dot_product = np.dot(email1, email2)
+    email1_mag = np.linalg.norm(email1)
+    email2_mag = np.linalg.norm(email2)
+
+    #just incase!!
+    if email1_mag == 0 or email2_mag == 0:
+        return 1
+
+    cos_similarity = dot_product / (email1_mag * email2_mag)
+    return 1 - cos_similarity
+
+
+#3. getting the k nearest emails to the test_email
+def get_k_nearest(train_features, train_labels, test_email, k):
+    all_dists = []
+    for i in range(len(train_features)):
+        dist = cosine_distance(train_features[i], test_email)
+        dist_label = [dist, train_labels[i]]
+        all_dists.append(dist_label)
+    all_dists.sort(key=lambda x: x[0])
+
+    k_labels = []
+    for i in range(k):
+        k_labels.append(all_dists[i][1])
+    return k_labels
+
+
+#4. getting the predicted label for the test email
+def predict_label(train_features, train_labels, test_email, k):
+    labels = get_k_nearest(train_features, train_labels, test_email, k)
+    zero_cnt = 0
+    one_cnt = 0
+    for label in labels:
+        if label == 1:
+            one_cnt += 1
+        else:
+            zero_cnt +=1
+    if zero_cnt > one_cnt:
+        return 0
+    else:
+        return 1
+    
+
+#5. getting all the predicted labels for the entire test dataset
+def predict_all(train_features, train_labels, test_features, k):
+    predicted_labels = []
+    for email in test_features:
+        label = predict_label(train_features, train_labels, email, k)
+        predicted_labels.append(label)
+    return predicted_labels
+
+
+#6. getting the accuracy of the prediction
+def accuracy(true_labels, predicted_labels):
+    correct_cnt = 0
+    for i in range(len(true_labels)):
+        if true_labels[i] == predicted_labels[i]:
+            correct_cnt +=1
+    return correct_cnt / len(true_labels)
+
+
+    
+
+
+
+if __name__ == "__main__":
+    train_features, train_labels = load_features("data/train_tfidf_features.csv")
+    test_features, test_labels = load_features("data/test_tfidf_features.csv")
+
+    print("Training emails:", len(train_features))
+    print("Testing emails:", len(test_features))
+    print("Features per email:", len(train_features[0]))
+
+    k = 9
+
+    start = time.time()
+    predicted_labels = predict_all(train_features, train_labels, test_features, k)
+    end = time.time()
+
+    print(int((end-start)/60), " mins", int((end-start)%60), " secs")
+
+    print(accuracy(test_labels, predicted_labels)*100, "%")

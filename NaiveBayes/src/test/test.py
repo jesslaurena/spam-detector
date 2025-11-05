@@ -19,7 +19,7 @@ def test_vectorize_basic():
         "Cheap meds available buy today"
     ]
     vocab = build_vocab(docs, min_freq=1, ngram_range=(1,1))
-    # Expect some known tokens
+    # Expect known tokens
     assert "buy" in vocab
     assert "cheap" in vocab
     # Vectorize first document and check counts
@@ -39,7 +39,6 @@ def test_vectorize_ngrams_and_min_freq():
     # bigrams should include "cheap meds"
     vocab_bi = build_vocab(docs, min_freq=1, ngram_range=(1,2))
     assert "cheap meds" in vocab_bi
-    # min_freq filtering: token 'offer' appears once, if min_freq=2 it should be removed
     vocab_filtered = build_vocab(docs, min_freq=2, ngram_range=(1,1))
     assert "offer" not in vocab_filtered
 

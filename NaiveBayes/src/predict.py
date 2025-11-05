@@ -1,33 +1,13 @@
-# src/predict.py
-"""
-Predict CLI for the Multinomial Naive Bayes spam detector.
+"""CLI to predict spam/ham with TF‑IDF classifier (preferred) or Naive Bayes (fallback)."""
 
-Usage:
-  # Single text
-  python src/predict.py --text "Buy cheap meds now" --model models/nb_model.pkl --vocab models/vocab.json
-
-  # Batch (one example per line)
-  python src/predict.py --input-file data/sample_texts.txt --model models/nb_model.pkl --vocab models/vocab.json --output-file preds.json
-
-Outputs:
-  Printed prediction(s) and (optionally) saved JSON with fields:
-    text, label, probs (dict class->probability)
-
-Notes:
-  - Attempts to import src.preprocess.preprocess and will use it if available.
-  - Falls back to a simple tokenizer/preprocessor if not present.
-  - Expects vocab saved as JSON (token->index) produced by src.vectorize.save_vocab.
-  - Expects model saved by model.save (pickle), loaded via model.MultinomialNB.load.
-"""
 import argparse
 import json
 import os
-from typing import Dict, Any, Iterable, List, Tuple
-
-# Project imports
-# Add parent directory to path so we can import src modules
 import sys
 from pathlib import Path
+from typing import Dict, Any, Iterable, List, Tuple, Optional
+
+# Ensure repo root is importable for `from src...`
 parent_dir = Path(__file__).parent.parent
 if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
@@ -35,8 +15,15 @@ if str(parent_dir) not in sys.path:
 from src.vectorize import load_vocab, vectorize
 from src.model import MultinomialNB
 
-# Fallback preprocess/tokenize if src.preprocess is not available.
+# joblib used for TF-IDF artifacts (optional)
+try:
+    import joblib
+except Exception:
+    joblib = None
+
+
 def _fallback_preprocess(text: str, lowercase: bool = True) -> List[str]:
+    """Simple tokenizer used if src.preprocess.preprocess is not available."""
     import re
     if text is None:
         return []
@@ -45,22 +32,24 @@ def _fallback_preprocess(text: str, lowercase: bool = True) -> List[str]:
         t = t.lower()
     return re.findall(r"[a-z0-9]+", t)
 
-def load_artifacts(model_path: str, vocab_path: str) -> Tuple[MultinomialNB, Dict[str, int]]:
+
+def load_nb_artifacts(model_path: str, vocab_path: str) -> Tuple[MultinomialNB, Dict[str, int]]:
+    """Load NB model and vocab from disk."""
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found: {model_path}")
     if not os.path.exists(vocab_path):
         raise FileNotFoundError(f"Vocab file not found: {vocab_path}")
-
     model = MultinomialNB.load(model_path)
     vocab = load_vocab(vocab_path)
     return model, vocab
 
-def predict_single_text(
+
+def predict_with_nb_text(
     text: str,
     model: MultinomialNB,
     vocab: Dict[str, int],
     preprocess_fn,
-    ngram_range=(1,1),
+    ngram_range=(1, 1),
     lowercase: bool = True,
 ) -> Dict[str, Any]:
     tokens = preprocess_fn(text, lowercase) if preprocess_fn is not None else _fallback_preprocess(text, lowercase)
@@ -69,57 +58,117 @@ def predict_single_text(
     probs = model.predict_proba(x)
     return {"text": text, "label": label, "probs": probs}
 
-def predict_multiple_texts(
+
+def predict_with_nb_texts(
     texts: Iterable[str],
     model: MultinomialNB,
     vocab: Dict[str, int],
     preprocess_fn,
-    ngram_range=(1,1),
+    ngram_range=(1, 1),
     lowercase: bool = True,
 ) -> List[Dict[str, Any]]:
-    results = []
-    for t in texts:
-        results.append(predict_single_text(t, model, vocab, preprocess_fn, ngram_range=ngram_range, lowercase=lowercase))
+    return [predict_with_nb_text(t, model, vocab, preprocess_fn, ngram_range=ngram_range, lowercase=lowercase) for t in texts]
+
+
+def predict_with_tfidf_text(
+    text: str,
+    vect,
+    clf,
+    preprocess_fn,
+    lowercase: bool = True,
+) -> Dict[str, Any]:
+    """Predict a single text using TF-IDF vectorizer + classifier."""
+    if preprocess_fn is not None:
+        tokens = preprocess_fn(text, lowercase)
+        text_for_vect = " ".join(tokens)
+    else:
+        text_for_vect = text
+    X = vect.transform([text_for_vect])
+    prob_arr = clf.predict_proba(X)[0]
+    pred = clf.predict(X)[0]
+    return {
+        "text": text,
+        "label": int(pred) if hasattr(pred, "__int__") else str(pred),
+        "probs": {str(i): float(p) for i, p in enumerate(prob_arr)}
+    }
+
+
+def predict_with_tfidf_texts(
+    texts: Iterable[str],
+    vect,
+    clf,
+    preprocess_fn,
+    lowercase: bool = True,
+) -> List[Dict[str, Any]]:
+    if preprocess_fn is not None:
+        prepared = [" ".join(preprocess_fn(t, lowercase)) for t in texts]
+    else:
+        prepared = list(texts)
+    X = vect.transform(prepared)
+    prob_matrix = clf.predict_proba(X)
+    preds = clf.predict(X)
+    results: List[Dict[str, Any]] = []
+    for orig_text, pred, probs in zip(texts, preds, prob_matrix):
+        results.append({
+            "text": orig_text,
+            "label": int(pred) if hasattr(pred, "__int__") else str(pred),
+            "probs": {str(i): float(p) for i, p in enumerate(probs)}
+        })
     return results
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Predict with trained Naive Bayes spam model")
-    parser.add_argument("--model", default="models/nb_model.pkl", help="Path to saved model (pickle)")
-    parser.add_argument("--vocab", default="models/vocab.json", help="Path to saved vocab (JSON)")
+    parser = argparse.ArgumentParser(description="Predict with trained classifier (TF-IDF preferred, NB fallback)")
+    parser.add_argument("--model", default="models/nb_model.pkl", help="Path to saved NB model (pickle)")
+    parser.add_argument("--vocab", default="models/vocab.json", help="Path to saved NB vocab (JSON)")
+    parser.add_argument("--tfidf-model", default="NaiveBayes/models/logreg_tfidf.pkl", help="Path to TF-IDF classifier (joblib)")
+    parser.add_argument("--tfidf-vect", default="NaiveBayes/models/tfidf_vectorizer.pkl", help="Path to TF-IDF vectorizer (joblib)")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--text", help="Single text to classify (wrap in quotes)")
-    group.add_argument("--input-file", help="Path to input file (one text per line or JSONL with {\"text\":...})")
+    group.add_argument("--input-file", help='Path to input file (one text per line or JSONL with {"text":...})')
     parser.add_argument("--output-file", help="Path to save predictions as JSON or JSONL (if not provided prints to stdout)")
-    parser.add_argument("--ngram-range", nargs=2, type=int, default=[1, 1], help="ngram range min max (default 1 1)")
-    parser.add_argument("--lowercase", action="store_true", help="lowercase texts before tokenization (default false if not set)")
+    parser.add_argument("--ngram-range", nargs=2, type=int, default=[1, 1], help="ngram range min max (for NB fallback)")
+    parser.add_argument("--lowercase", action="store_true", help="lowercase texts before tokenization")
     args = parser.parse_args()
-
-    # load model and vocab
-    try:
-        model, vocab = load_artifacts(args.model, args.vocab)
-    except Exception as e:
-        raise SystemExit(f"Failed to load artifacts: {e}")
-
-    # Try to import team preprocess if available
-    try:
-        # Ensure parent is in path
-        parent_dir = Path(__file__).parent.parent
-        if str(parent_dir) not in sys.path:
-            sys.path.insert(0, str(parent_dir))
-        from src.preprocess import preprocess  # type: ignore
-        preprocess_fn = preprocess
-    except Exception:
-        preprocess_fn = None  # we will use fallback via predict_single_text
 
     ngram_range = (int(args.ngram_range[0]), int(args.ngram_range[1]))
     lowercase = bool(args.lowercase)
 
-    # Prepare input texts
-    texts = []
+    # Try TF-IDF artifacts first
+    tfidf_available = False
+    vect = clf = None
+    tfidf_vect_path = Path(args.tfidf_vect)
+    tfidf_model_path = Path(args.tfidf_model)
+    if joblib is not None and tfidf_vect_path.exists() and tfidf_model_path.exists():
+        try:
+            vect = joblib.load(str(tfidf_vect_path))
+            clf = joblib.load(str(tfidf_model_path))
+            tfidf_available = True
+        except Exception:
+            tfidf_available = False
+
+    # Load NB artifacts as fallback
+    nb_model = nb_vocab = None
+    nb_available = False
+    if not tfidf_available:
+        try:
+            nb_model, nb_vocab = load_nb_artifacts(args.model, args.vocab)
+            nb_available = True
+        except Exception as e:
+            raise SystemExit(f"Failed to load NB artifacts and TF-IDF not available: {e}")
+
+    # Try to import optional team preprocess
+    try:
+        from src.preprocess import preprocess  # type: ignore
+        preprocess_fn = preprocess
+    except Exception:
+        preprocess_fn = None
+
+    # Prepare inputs
+    texts: List[str] = []
     if args.text:
         texts = [args.text]
     else:
-        # read file: accept plain text (one per line) or JSONL where each line is {"text": "..."}
         if not os.path.exists(args.input_file):
             raise SystemExit(f"Input file not found: {args.input_file}")
         with open(args.input_file, "r", encoding="utf8") as f:
@@ -127,7 +176,6 @@ def main():
                 line = line.strip()
                 if not line:
                     continue
-                # try parse JSON line
                 if line.startswith("{"):
                     try:
                         obj = json.loads(line)
@@ -136,15 +184,16 @@ def main():
                             continue
                     except Exception:
                         pass
-                # fallback: treat entire line as text
                 texts.append(line)
 
     # Run predictions
-    results = predict_multiple_texts(texts, model, vocab, preprocess_fn or _fallback_preprocess, ngram_range=ngram_range, lowercase=lowercase)
+    if tfidf_available:
+        results = predict_with_tfidf_texts(texts, vect, clf, preprocess_fn, lowercase=lowercase)
+    else:
+        results = predict_with_nb_texts(texts, nb_model, nb_vocab, preprocess_fn or _fallback_preprocess, ngram_range=ngram_range, lowercase=lowercase)
 
-    # Output
+    # Output results
     if args.output_file:
-        # If multiple results, save as JSONL (one JSON per line). If single result, save a single JSON object.
         out_path = args.output_file
         os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
         if len(results) == 1:
@@ -156,9 +205,9 @@ def main():
                     f.write(json.dumps(r, ensure_ascii=False) + "\n")
         print(f"Saved {len(results)} prediction(s) to {out_path}")
     else:
-        # pretty print to stdout
         for r in results:
             print(json.dumps(r, ensure_ascii=False))
+
 
 if __name__ == "__main__":
     main()
